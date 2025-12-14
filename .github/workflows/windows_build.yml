@@ -25,21 +25,11 @@ jobs:
           pip install -r requirements.txt
           
       - name: Build Windows Executable
-        # The complex PyInstaller command, running on the Windows VM
+        shell: cmd # Forces the use of Command Prompt shell for reliable execution
         run: |
-          # Use 'python -m' to execute PyInstaller
-          # The backtick (`) is the line continuation character in PowerShell (default for Windows runner)
-          python -m PyInstaller --onefile --windowed --name "Bin2Book" `
-          --icon "app_logo.ico" `
-          --version-file "version_info.rc" `
-          --collect-all "pypdf" `
-          --collect-all "undetected_chromedriver" `
-          --hidden-import "selenium.webdriver.chrome.service" `
-          --hidden-import "reportlab.graphics.shapes" `
-          --hidden-import "reportlab.pdfbase.pdfmetrics" `
-          # FIX: Use the dynamic path structure for GitHub runner's Python installation
-          --add-data "C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab" `
-          "gui.py"
+          # Define command on a single line for stability
+          COMMAND="python -m PyInstaller --onefile --windowed --name Bin2Book --icon app_logo.ico --version-file version_info.rc --collect-all pypdf --collect-all undetected_chromedriver --hidden-import selenium.webdriver.chrome.service --hidden-import reportlab.graphics.shapes --hidden-import reportlab.pdfbase.pdfmetrics --add-data C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab gui.py"
+          %COMMAND%
 
       - name: Archive and Upload Artifact
         uses: actions/upload-artifact@v4
