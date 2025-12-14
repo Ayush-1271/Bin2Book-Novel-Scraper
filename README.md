@@ -291,16 +291,15 @@ A: The PDFs are standard files and can be edited with any PDF editor, though tex
 
 ---
 
-## 📜 License & Attribution
+## 📜 License & Copyright
 
-Bin2Book is copyrighted © 2025 Ayush Ranjan (CipherMoth). All rights reserved.
+**Proprietary Software (All Rights Reserved)**
 
-**Built with:**
-- Python 3.10+
-- Selenium & Undetected ChromeDriver
-- ReportLab
-- PyPDF
-- Tkinter
+This software, Bin2Book Novel Downloader, is the intellectual property of Ayush Ranjan (CipherMoth).
+
+* **Copyright:** © 2025 Ayush Ranjan (CipherMoth). All rights reserved.
+* **Permitted Use:** You are granted the right to download, install, and use the compiled application for personal, non-commercial novel archiving purposes.
+* **Restrictions:** You may not copy, modify, redistribute, or use the source code for any purpose. Unauthorized use, reproduction, or distribution of this software is strictly prohibited.
 
 ---
 
