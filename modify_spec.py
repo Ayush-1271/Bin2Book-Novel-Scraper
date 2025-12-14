@@ -6,7 +6,6 @@ import sys
 SPEC_FILE = "Bin2Book.spec"
 
 # Define the data additions, including the complex reportlab path
-# This path is based on the GitHub Actions Windows runner environment (3.10.11)
 ANALYSIS_ADDITIONS = {
     "datas": [
         ("app_logo.ico", "."),
@@ -30,7 +29,7 @@ def modify_spec():
         print(f"Error: {SPEC_FILE} not found. Ensure 'python -m PyInstaller --onefile --name Bin2Book gui.py' ran successfully first.")
         sys.exit(1)
 
-    # --- REGEX PATTERN DEFINITIONS (Moved inside the function) ---
+    # --- REGEX PATTERN DEFINITIONS ---
     analysis_pattern = r'a = Analysis\((.*?)\)'
     pkg_pattern = r'(pyz = PYZ\((.*?)\))'
     exe_pattern = r'(exe = EXE\(.*?\)(.*?))$'
@@ -48,21 +47,22 @@ def modify_spec():
         hidden_imports_list = str(ANALYSIS_ADDITIONS["hiddenimports"])
         analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={hidden_imports_list}', 1)
 
-        # Build the datas list string
+        # Build the datas list string (this part contains the Windows paths)
         datas_injection = "added_datas = [\n"
         for src, dst in ANALYSIS_ADDITIONS["datas"]:
             # PyInstaller spec files use Python tuples
             datas_injection += f"    ('{src}', '{dst}'),\n"
         datas_injection += "]\na.datas += added_datas"
 
+        # FIX: Use rf'' (raw f-string) for the replacement template to prevent Python from
+        # interpreting the complex Windows paths in datas_injection as regex escapes.
+        replacement_template = rf'\1\n\n{datas_injection}'
+        
         # Find the PYZ line and inject our custom data *before* it gets processed
-        # Use re.DOTALL for multi-line matching
-        content = re.sub(pkg_pattern, r'\1\n\n' + datas_injection, content, 1, flags=re.DOTALL)
+        content = re.sub(pkg_pattern, replacement_template, content, 1, flags=re.DOTALL)
 
 
     # --- 2. Modify the EXE block (for icon and version) ---
-    # Find the EXE line and inject icon and version file paths
-    # Use re.DOTALL for multi-line matching
     replace_str = r'\1, icon="app_logo.ico", version="version_info.rc"'
 
     content = re.sub(exe_pattern, replace_str, content, 1, flags=re.DOTALL)
