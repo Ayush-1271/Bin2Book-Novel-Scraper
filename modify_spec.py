@@ -1,17 +1,17 @@
-import json
 import re
 import os
+import sys
 
+# --- Configuration ---
 SPEC_FILE = "Bin2Book.spec"
 
-# Define the additions for the Analysis section (Analysis block is where
-# hidden imports and manual data files go).
-# Note: Data path uses double backslashes for string escaping in Python.
+# Define the data additions, including the complex reportlab path
+# This path is based on the GitHub Actions Windows runner environment (3.10.11)
 ANALYSIS_ADDITIONS = {
     "datas": [
         ("app_logo.ico", "."),
         ("version_info.rc", "."),
-        # FIX: Use the collected info from the log for reportlab path
+        # Using double backslashes for path escaping in Python strings
         ("C:\\hostedtoolcache\\windows\\Python\\3.10.11\\x64\\Lib\\site-packages\\reportlab", "reportlab"),
     ],
     "hiddenimports": [
@@ -20,41 +20,47 @@ ANALYSIS_ADDITIONS = {
         "reportlab.pdfbase.pdfmetrics",
     ],
 }
+# --- End Configuration ---
 
 def modify_spec():
-    with open(SPEC_FILE, 'r') as f:
-        content = f.read()
+    try:
+        with open(SPEC_FILE, 'r') as f:
+            content = f.read()
+    except FileNotFoundError:
+        print(f"Error: {SPEC_FILE} not found. Ensure 'python -m PyInstaller --onefile --name Bin2Book gui.py' ran successfully first.")
+        sys.exit(1)
 
-    # --- 1. Modify the Analysis block (a) ---
-    # Find the Analysis block content
-    analysis_pattern = r'a = Analysis\((.*?)\)', re.DOTALL
-    match = re.search(analysis_pattern, content)
+    # --- 1. Modify the Analysis block (a) for hidden imports and data ---
+    # FIX: Pass re.DOTALL separately to re.search
+    analysis_pattern = r'a = Analysis\((.*?)\)'
+    match = re.search(analysis_pattern, content, re.DOTALL)
 
     if match:
+        # Get the current Analysis content inside the parentheses
         analysis_content = match.group(1)
         
         # Inject custom hidden imports
-        for imp in ANALYSIS_ADDITIONS["hiddenimports"]:
-            if imp not in analysis_content:
-                analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={ANALYSIS_ADDITIONS["hiddenimports"]}', 1)
-        
-        # Inject custom data files
-        # We manually append the datas list to ensure it's included
-        data_injection = "added_datas = [\n"
+        # NOTE: This replaces the entire 'hiddenimports=[]' list for simplicity
+        hidden_imports_list = str(ANALYSIS_ADDITIONS["hiddenimports"])
+        analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={hidden_imports_list}', 1)
+
+        # Build the datas list string
+        datas_injection = "added_datas = [\n"
         for src, dst in ANALYSIS_ADDITIONS["datas"]:
             # PyInstaller spec files use Python tuples
-            data_injection += f"    ('{src}', '{dst}'),\n"
-        data_injection += "]\na.datas += added_datas"
+            datas_injection += f"    ('{src}', '{dst}'),\n"
+        datas_injection += "]\na.datas += added_datas"
 
-        # Find the PKG line to know where to insert our custom data
+        # Find the PYZ line and inject our custom data *before* it gets processed
+        # This is a safe insertion point within the spec file structure.
         pkg_pattern = r'(pyz = PYZ\((.*?)\))', re.DOTALL
-        content = re.sub(pkg_pattern, r'\1\n\n' + data_injection, content, 1)
+        content = re.sub(pkg_pattern, r'\1\n\n' + datas_injection, content, 1)
 
 
     # --- 2. Modify the EXE block (for icon and version) ---
     # Find the EXE line and inject icon and version file paths
-    # We use a pattern that matches the EXE() call and adds the arguments
-    exe_pattern = r'(exe = EXE\(.*?\)(.*?))'
+    # The pattern matches the EXE() call and adds the arguments just before the final ')'
+    exe_pattern = r'(exe = EXE\(.*?\)(.*?))$' # Matches the EXE call at the end of the file
     replace_str = r'\1, icon="app_logo.ico", version="version_info.rc"'
 
     content = re.sub(exe_pattern, replace_str, content, 1)
