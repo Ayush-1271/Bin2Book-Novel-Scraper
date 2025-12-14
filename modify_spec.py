@@ -10,8 +10,8 @@ ANALYSIS_ADDITIONS = {
     "datas": [
         ("app_logo.ico", "."),
         ("version_info.rc", "."),
-        # Using double backslashes for path escaping in Python strings
-        ("C:\\hostedtoolcache\\windows\\Python\\3.10.11\\x64\\Lib\\site-packages\\reportlab", "reportlab"),
+        # FINAL FIX: Use forward slashes (/) in the Windows path for stability in the regex replacement string.
+        ("C:/hostedtoolcache/windows/Python/3.10.11/x64/Lib/site-packages/reportlab", "reportlab"),
     ],
     "hiddenimports": [
         "selenium.webdriver.chrome.service",
@@ -47,15 +47,14 @@ def modify_spec():
         hidden_imports_list = str(ANALYSIS_ADDITIONS["hiddenimports"])
         analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={hidden_imports_list}', 1)
 
-        # Build the datas list string (this part contains the Windows paths)
+        # Build the datas list string 
         datas_injection = "added_datas = [\n"
         for src, dst in ANALYSIS_ADDITIONS["datas"]:
             # PyInstaller spec files use Python tuples
             datas_injection += f"    ('{src}', '{dst}'),\n"
         datas_injection += "]\na.datas += added_datas"
 
-        # FINAL FIX: Use simple string concatenation to bypass regex engine's
-        # escape sequence checking for complex paths.
+        # Use simple string concatenation to bypass regex engine's escape sequence checking
         replacement_template = r'\1' + '\n\n' + datas_injection
         
         # Find the PYZ line and inject our custom data *before* it gets processed
