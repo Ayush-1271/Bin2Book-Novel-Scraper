@@ -25,24 +25,23 @@ jobs:
           pip install -r requirements.txt
           
       - name: Build Windows Executable
-        shell: bash # Use the powerful Bash shell
+        shell: bash # Use the powerful Bash shell for reliable multi-line commands
         run: |
-          # The key fix: Rely on the multi-line capability of the surrounding quotes 
-          # and Bash, do not use backslashes (\) at the end of the lines.
-          COMMAND='
-          python -m PyInstaller --onefile --windowed --name "Bin2Book" 
-          --icon "app_logo.ico" 
-          --version-file "version_info.rc" 
-          --collect-all "pypdf" 
-          --collect-all "undetected_chromedriver" 
-          --hidden-import "selenium.webdriver.chrome.service" 
-          --hidden-import "reportlab.graphics.shapes" 
-          --hidden-import "reportlab.pdfbase.pdfmetrics" 
-          --add-data "C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab" 
-          "gui.py"
-          '
-          # Execute the command
-          eval "$COMMAND"
+          # Define all PyInstaller options in a single variable for stability,
+          # omitting the final script name.
+          # Note: C:\hostedtoolcache is the standard location for Python on the Windows runner.
+          PYINSTALLER_OPTS="--onefile --windowed --name 'Bin2Book' \
+          --icon 'app_logo.ico' \
+          --version-file 'version_info.rc' \
+          --collect-all 'pypdf' \
+          --collect-all 'undetected_chromedriver' \
+          --hidden-import 'selenium.webdriver.chrome.service' \
+          --hidden-import 'reportlab.graphics.shapes' \
+          --hidden-import 'reportlab.pdfbase.pdfmetrics' \
+          --add-data 'C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab'"
+          
+          # Execute the command, ensuring the script name is passed as the final argument
+          python -m PyInstaller $PYINSTALLER_OPTS "gui.py"
 
       - name: Archive and Upload Artifact
         uses: actions/upload-artifact@v4
@@ -50,3 +49,4 @@ jobs:
           name: Bin2Book-Windows-Exe
           # The file to be uploaded is the executable from the dist folder
           path: dist/Bin2Book.exe
+          
