@@ -27,20 +27,13 @@ jobs:
       - name: Create and Modify Specification File (.spec)
         shell: bash
         run: |
-          # 1. Generate a basic spec file (this part worked successfully)
+          # 1. Generate a basic spec file (this is fast and necessary)
           python -m PyInstaller --onefile --name "Bin2Book" "gui.py" 
           
-          # 2. Add resource options (Icon and Version) to the EXE block using sed
-          # Simpler EXE modification using fixed name, avoiding complex regex capturing (\1)
-          # We search for the unique 'EXE' line and replace it, forcing the icon/version file inclusion.
-          sed -i 's/EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, upx_exclude=\[\], runtime_tmpdir=None, console=False)/EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, upx_exclude=[], runtime_tmpdir=None, console=False, icon="app_logo.ico", version="version_info.rc")/g' "Bin2Book.spec"
+          # 2. Run Python script to modify the spec file in a stable, OS-agnostic way
+          python modify_spec.py
           
-          # 3. Add necessary package data using sed (Simplified)
-          # This adds reportlab as data in the Analysis block
-          # We must use the 's' command's alternate delimiter here (e.g., '#') to avoid issues with path slashes
-          sed -i "s#^a = Analysis(\[.*\])$#a = Analysis([\n    'gui.py',\n    pathex=[],\n    binaries=[],\n    datas=[('C:\\\\hostedtoolcache\\\\windows\\\\Python\\\\3.10.11\\\\x64\\\\Lib\\\\site-packages\\\\reportlab', 'reportlab')],\n    hiddenimports=['selenium.webdriver.chrome.service', 'reportlab.graphics.shapes', 'reportlab.pdfbase.pdfmetrics'],\n    hookspath=[],\n    hooksconfig={},\n    runtime_hooks=[],\n    excludes=[],\n    win_no_prefer_redirects=False,\n    win_private_assemblies=False,\n    noarchive=False,\n    optimize=0,\n)\n#" "Bin2Book.spec"
-          
-          # 4. Remove the temporary build folder before final build
+          # 3. Remove the temporary build folder before final build
           rm -rf build
           
       - name: Final Build using Spec File
