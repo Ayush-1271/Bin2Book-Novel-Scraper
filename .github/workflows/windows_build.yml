@@ -19,13 +19,16 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
+        # Install dependencies using the requirements.txt file
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
+          
       - name: Build Windows Executable
-        # This is the exact complex command, running on the Windows VM
+        # The complex PyInstaller command, running on the Windows VM
         run: |
+          # Use 'python -m' to execute PyInstaller
+          # The backtick (`) is the line continuation character in PowerShell (default for Windows runner)
           python -m PyInstaller --onefile --windowed --name "Bin2Book" `
           --icon "app_logo.ico" `
           --version-file "version_info.rc" `
@@ -34,7 +37,8 @@ jobs:
           --hidden-import "selenium.webdriver.chrome.service" `
           --hidden-import "reportlab.graphics.shapes" `
           --hidden-import "reportlab.pdfbase.pdfmetrics" `
-          --add-data "C:\Users\HP\AppData\Roaming\Python\Python310\site-packages\reportlab;reportlab" `
+          # FIX: Use the dynamic path structure for GitHub runner's Python installation
+          --add-data "C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab" `
           "gui.py"
 
       - name: Archive and Upload Artifact
