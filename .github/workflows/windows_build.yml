@@ -24,22 +24,32 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Build Windows Executable
-        shell: bash # Use the powerful Bash shell for reliable multi-line commands
+      - name: Create and Modify Specification File (.spec)
+        # We use Python to generate a spec file, then modify it to add hidden imports,
+        # resources, and icons in a stable, Python-friendly format.
+        shell: bash
         run: |
-          # Define all PyInstaller options in a single variable for stability.
-          # FIX: Change '--add-data ...' to '--add-data=...'
-          PYINSTALLER_OPTS="--onefile --windowed --name 'Bin2Book' \
-          --icon 'app_logo.ico' \
-          --version-file 'version_info.rc' \
-          --collect-all 'pypdf' \
-          --collect-all 'undetected_chromedriver' \
-          --collect-all 'reportlab' \  <-- ADD THIS LINE
-          --hidden-import 'selenium.webdriver.chrome.service' \
-          --hidden-import 'reportlab.graphics.shapes' \
-          --hidden-import 'reportlab.pdfbase.pdfmetrics'"
+          # 1. Generate a basic spec file
+          python -m PyInstaller --onefile --name "Bin2Book" "gui.py"
+          
+          # 2. Define the full, correct Analysis block (including hidden imports and resources)
+          # We use the 'sed' command (available in Bash) to replace the Analysis block
+          # with a clean, hardcoded version that includes all necessary options.
+          
+          # The Analysis block must contain all options that were previously command-line flags
+          # like --hidden-import, --collect-all, and --add-data.
+          
+          sed -i 's/^a = Analysis(.*)$/a = Analysis(\n    ["gui.py"],\n    pathex=[],\n    binaries=[],\n    datas=[],\n    hiddenimports=["selenium.webdriver.chrome.service", "reportlab.graphics.shapes", "reportlab.pdfbase.pdfmetrics"],\n    hookspath=[],\n    hooksconfig={},\n    runtime_hooks=[],\n    excludes=[],\n    win_no_prefer_redirects=False,\n    win_private_assemblies=False,\n    noarchive=False,\n    optimize=0,\n)\n\nadded_files = [\n    ("app_logo.ico", "."),\n    ("version_info.rc", "."),\n    ("C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab", "reportlab")\n]\n\n# Combine the collected data with manual additions\na.datas += added_files\n\n' "Bin2Book.spec"
 
-          python -m PyInstaller $PYINSTALLER_OPTS "gui.py"
+          # 3. Add the Windows-specific resource options to the EXE section
+          # We search for the EXE creation line and insert the version and icon options
+          sed -i 's/^(exe = EXE(.*), name="Bin2Book", .*)$/\1, icon="app_logo.ico", version="version_info.rc"/' "Bin2Book.spec"
+          
+      - name: Final Build using Spec File
+        shell: bash
+        run: |
+          # Use the stable .spec file for the final compilation
+          python -m PyInstaller "Bin2Book.spec"
 
       - name: Archive and Upload Artifact
         uses: actions/upload-artifact@v4
@@ -47,4 +57,3 @@ jobs:
           name: Bin2Book-Windows-Exe
           # The file to be uploaded is the executable from the dist folder
           path: dist/Bin2Book.exe
-          
