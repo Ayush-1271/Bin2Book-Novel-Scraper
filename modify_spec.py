@@ -30,9 +30,14 @@ def modify_spec():
         print(f"Error: {SPEC_FILE} not found. Ensure 'python -m PyInstaller --onefile --name Bin2Book gui.py' ran successfully first.")
         sys.exit(1)
 
-    # --- 1. Modify the Analysis block (a) for hidden imports and data ---
-    # FIX: Pass re.DOTALL separately to re.search
+    # --- REGEX PATTERN DEFINITIONS (Moved inside the function) ---
     analysis_pattern = r'a = Analysis\((.*?)\)'
+    pkg_pattern = r'(pyz = PYZ\((.*?)\))'
+    exe_pattern = r'(exe = EXE\(.*?\)(.*?))$'
+    # --- END REGEX PATTERN DEFINITIONS ---
+
+
+    # --- 1. Modify the Analysis block (a) for hidden imports and data ---
     match = re.search(analysis_pattern, content, re.DOTALL)
 
     if match:
@@ -40,7 +45,6 @@ def modify_spec():
         analysis_content = match.group(1)
         
         # Inject custom hidden imports
-        # NOTE: This replaces the entire 'hiddenimports=[]' list for simplicity
         hidden_imports_list = str(ANALYSIS_ADDITIONS["hiddenimports"])
         analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={hidden_imports_list}', 1)
 
@@ -52,18 +56,16 @@ def modify_spec():
         datas_injection += "]\na.datas += added_datas"
 
         # Find the PYZ line and inject our custom data *before* it gets processed
-        # This is a safe insertion point within the spec file structure.
-        pkg_pattern = r'(pyz = PYZ\((.*?)\))', re.DOTALL
-        content = re.sub(pkg_pattern, r'\1\n\n' + datas_injection, content, 1)
+        # Use re.DOTALL for multi-line matching
+        content = re.sub(pkg_pattern, r'\1\n\n' + datas_injection, content, 1, flags=re.DOTALL)
 
 
     # --- 2. Modify the EXE block (for icon and version) ---
     # Find the EXE line and inject icon and version file paths
-    # The pattern matches the EXE() call and adds the arguments just before the final ')'
-    exe_pattern = r'(exe = EXE\(.*?\)(.*?))$' # Matches the EXE call at the end of the file
+    # Use re.DOTALL for multi-line matching
     replace_str = r'\1, icon="app_logo.ico", version="version_info.rc"'
 
-    content = re.sub(exe_pattern, replace_str, content, 1)
+    content = re.sub(exe_pattern, replace_str, content, 1, flags=re.DOTALL)
 
 
     # --- 3. Write the updated content back ---
