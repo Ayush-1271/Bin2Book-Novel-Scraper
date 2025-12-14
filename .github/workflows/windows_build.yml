@@ -25,25 +25,22 @@ jobs:
           pip install -r requirements.txt
           
       - name: Create and Modify Specification File (.spec)
-        # We use Python to generate a spec file, then modify it to add hidden imports,
-        # resources, and icons in a stable, Python-friendly format.
         shell: bash
         run: |
-          # 1. Generate a basic spec file
-          python -m PyInstaller --onefile --name "Bin2Book" "gui.py"
+          # 1. Generate a basic spec file (this part worked successfully)
+          python -m PyInstaller --onefile --name "Bin2Book" "gui.py" 
           
-          # 2. Define the full, correct Analysis block (including hidden imports and resources)
-          # We use the 'sed' command (available in Bash) to replace the Analysis block
-          # with a clean, hardcoded version that includes all necessary options.
-          
-          # The Analysis block must contain all options that were previously command-line flags
-          # like --hidden-import, --collect-all, and --add-data.
-          
-          sed -i 's/^a = Analysis(.*)$/a = Analysis(\n    ["gui.py"],\n    pathex=[],\n    binaries=[],\n    datas=[],\n    hiddenimports=["selenium.webdriver.chrome.service", "reportlab.graphics.shapes", "reportlab.pdfbase.pdfmetrics"],\n    hookspath=[],\n    hooksconfig={},\n    runtime_hooks=[],\n    excludes=[],\n    win_no_prefer_redirects=False,\n    win_private_assemblies=False,\n    noarchive=False,\n    optimize=0,\n)\n\nadded_files = [\n    ("app_logo.ico", "."),\n    ("version_info.rc", "."),\n    ("C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab", "reportlab")\n]\n\n# Combine the collected data with manual additions\na.datas += added_files\n\n' "Bin2Book.spec"
-
-          # 3. Add the Windows-specific resource options to the EXE section
+          # 2. Add resource options (Icon and Version) to the EXE block using sed
           # We search for the EXE creation line and insert the version and icon options
           sed -i 's/^(exe = EXE(.*), name="Bin2Book", .*)$/\1, icon="app_logo.ico", version="version_info.rc"/' "Bin2Book.spec"
+          
+          # 3. Add necessary package data using sed (Simplified)
+          # This adds reportlab as data in the Analysis block
+          # We must use the 's' command's alternate delimiter here (e.g., '#') to avoid issues with path slashes
+          sed -i "s#^a = Analysis(\[.*\])$#a = Analysis([\n    'gui.py',\n    pathex=[],\n    binaries=[],\n    datas=[('C:\\\\hostedtoolcache\\\\windows\\\\Python\\\\3.10.11\\\\x64\\\\Lib\\\\site-packages\\\\reportlab', 'reportlab')],\n    hiddenimports=['selenium.webdriver.chrome.service', 'reportlab.graphics.shapes', 'reportlab.pdfbase.pdfmetrics'],\n    hookspath=[],\n    hooksconfig={},\n    runtime_hooks=[],\n    excludes=[],\n    win_no_prefer_redirects=False,\n    win_private_assemblies=False,\n    noarchive=False,\n    optimize=0,\n)\n#" "Bin2Book.spec"
+          
+          # 4. Remove the temporary build folder before final build
+          rm -rf build
           
       - name: Final Build using Spec File
         shell: bash
