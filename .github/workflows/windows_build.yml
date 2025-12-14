@@ -31,8 +31,9 @@ jobs:
           python -m PyInstaller --onefile --name "Bin2Book" "gui.py" 
           
           # 2. Add resource options (Icon and Version) to the EXE block using sed
-          # We search for the EXE creation line and insert the version and icon options
-          sed -i 's/^(exe = EXE(.*), name="Bin2Book", .*)$/\1, icon="app_logo.ico", version="version_info.rc"/' "Bin2Book.spec"
+          # Simpler EXE modification using fixed name, avoiding complex regex capturing (\1)
+          # We search for the unique 'EXE' line and replace it, forcing the icon/version file inclusion.
+          sed -i 's/EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, upx_exclude=\[\], runtime_tmpdir=None, console=False)/EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, name=name, debug=False, bootloader_ignore_signals=False, strip=False, upx=True, upx_exclude=[], runtime_tmpdir=None, console=False, icon="app_logo.ico", version="version_info.rc")/g' "Bin2Book.spec"
           
           # 3. Add necessary package data using sed (Simplified)
           # This adds reportlab as data in the Analysis block
