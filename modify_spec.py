@@ -54,9 +54,9 @@ def modify_spec():
             datas_injection += f"    ('{src}', '{dst}'),\n"
         datas_injection += "]\na.datas += added_datas"
 
-        # FIX: Use rf'' (raw f-string) for the replacement template to prevent Python from
-        # interpreting the complex Windows paths in datas_injection as regex escapes.
-        replacement_template = rf'\1\n\n{datas_injection}'
+        # FINAL FIX: Use simple string concatenation to bypass regex engine's
+        # escape sequence checking for complex paths.
+        replacement_template = r'\1' + '\n\n' + datas_injection
         
         # Find the PYZ line and inject our custom data *before* it gets processed
         content = re.sub(pkg_pattern, replacement_template, content, 1, flags=re.DOTALL)
