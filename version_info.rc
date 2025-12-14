@@ -1,0 +1,42 @@
+# UTF-8
+#
+# For more details about fixed file info 'ffi' see:
+# http://msdn.microsoft.com/en-us/library/ms724371(VS.85).aspx
+#
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    # Mask that specifies which bits in 'flags' are defined.
+    mask=0x3f,
+    # File flags (0x0 for Release, 0x1 for Debug, 0x2 for Prerelease)
+    flags=0x0,
+    # OS for which file was designed (0x4 - NT)
+    OS=0x40004,
+    # File type (0x1 - Application)
+    fileType=0x1,
+    # Subtype (0x0 - Unknown)
+    subtype=0x0,
+    # Date creation
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'CipherMoth Solutions'),
+        StringStruct(u'FileDescription', u'Bin2Book: Automated Novel Archival & PDF Engine'),
+        StringStruct(u'FileVersion', u'1.0.0.0'),
+        StringStruct(u'InternalName', u'Bin2Book_Core'),
+        StringStruct(u'LegalCopyright', u'Copyright (C) 2025 Ayush Ranjan (CipherMoth). All Rights Reserved.'),
+        StringStruct(u'OriginalFilename', u'Bin2Book.exe'),
+        StringStruct(u'ProductName', u'Bin2Book Suite'),
+        StringStruct(u'ProductVersion', u'1.0.0.0'),
+        StringStruct(u'Comments', u'Specialized tool for batch downloading and formatting web novels.'),
+        StringStruct(u'LegalTrademarks', u'Bin2Book is a trademark of CipherMoth Solutions.')])
+      ]), 
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
