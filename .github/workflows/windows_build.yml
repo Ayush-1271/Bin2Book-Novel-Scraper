@@ -1,0 +1,45 @@
+name: Windows Application Build (PyInstaller)
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+
+jobs:
+  build-windows-app:
+    runs-on: windows-latest  # Use a Windows runner provided by GitHub
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Windows Executable
+        # This is the exact complex command, running on the Windows VM
+        run: |
+          python -m PyInstaller --onefile --windowed --name "Bin2Book" `
+          --icon "app_logo.ico" `
+          --version-file "version_info.rc" `
+          --collect-all "pypdf" `
+          --collect-all "undetected_chromedriver" `
+          --hidden-import "selenium.webdriver.chrome.service" `
+          --hidden-import "reportlab.graphics.shapes" `
+          --hidden-import "reportlab.pdfbase.pdfmetrics" `
+          --add-data "C:\Users\HP\AppData\Roaming\Python\Python310\site-packages\reportlab;reportlab" `
+          "gui.py"
+
+      - name: Archive and Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bin2Book-Windows-Exe
+          # The file to be uploaded is the executable from the dist folder
+          path: dist/Bin2Book.exe
