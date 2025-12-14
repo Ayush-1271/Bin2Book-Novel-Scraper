@@ -1,77 +1,49 @@
-import re
-import os
-import sys
+# modify_spec.py - Final, Stable Version
 
-# --- Configuration ---
 SPEC_FILE = "Bin2Book.spec"
 
-# Define the data additions, including the complex reportlab path
-ANALYSIS_ADDITIONS = {
-    "datas": [
-        ("app_logo.ico", "."),
-        ("version_info.rc", "."),
-        # FINAL FIX: Use forward slashes (/) in the Windows path for stability in the regex replacement string.
-        ("C:/hostedtoolcache/windows/Python/3.10.11/x64/Lib/site-packages/reportlab", "reportlab"),
-    ],
-    "hiddenimports": [
-        "selenium.webdriver.chrome.service",
-        "reportlab.graphics.shapes",
-        "reportlab.pdfbase.pdfmetrics",
-    ],
-}
-# --- End Configuration ---
-
-def modify_spec():
+def modify_spec_stable():
     try:
+        # 1. Read the spec file content
         with open(SPEC_FILE, 'r') as f:
-            content = f.read()
+            content = f.readlines()
     except FileNotFoundError:
-        print(f"Error: {SPEC_FILE} not found. Ensure 'python -m PyInstaller --onefile --name Bin2Book gui.py' ran successfully first.")
-        sys.exit(1)
+        print(f"Error: {SPEC_FILE} not found. Build failed before spec file creation.")
+        return
 
-    # --- REGEX PATTERN DEFINITIONS ---
-    analysis_pattern = r'a = Analysis\((.*?)\)'
-    pkg_pattern = r'(pyz = PYZ\((.*?)\))'
-    exe_pattern = r'(exe = EXE\(.*?\)(.*?))$'
-    # --- END REGEX PATTERN DEFINITIONS ---
+    new_content = []
+    
+    # 2. Define the exact path (using forward slashes is best practice)
+    REPORTLAB_PATH = "C:/hostedtoolcache/windows/Python/3.10.11/x64/Lib/site-packages/reportlab"
 
-
-    # --- 1. Modify the Analysis block (a) for hidden imports and data ---
-    match = re.search(analysis_pattern, content, re.DOTALL)
-
-    if match:
-        # Get the current Analysis content inside the parentheses
-        analysis_content = match.group(1)
+    for line in content:
+        # A. Inject Hidden Imports and Data Files into the Analysis (a) block
+        if line.startswith('a = Analysis('):
+            # This line defines the Analysis block which contains all data/imports
+            
+            # --- HIDDEN IMPORTS ---
+            # Replace default hiddenimports with custom list
+            line = line.replace('hiddenimports=[]', 
+                'hiddenimports=[\'selenium.webdriver.chrome.service\', \'reportlab.graphics.shapes\', \'reportlab.pdfbase.pdfmetrics\']')
+            
+            # --- DATA FILES (app_logo.ico, reportlab) ---
+            # Append the data items directly to the 'datas' list within the Analysis call
+            line = line.replace('datas=[]', 
+                f"datas=[('app_logo.ico', '.'), ('version_info.rc', '.'), ('{REPORTLAB_PATH}', 'reportlab')]")
         
-        # Inject custom hidden imports
-        hidden_imports_list = str(ANALYSIS_ADDITIONS["hiddenimports"])
-        analysis_content = analysis_content.replace('hiddenimports=[]', f'hiddenimports={hidden_imports_list}', 1)
+        # B. Inject Icon and Version File into the EXE block
+        elif line.startswith('exe = EXE('):
+            # This line defines the EXE executable
+            # We insert the icon and version file arguments
+            line = line.replace('console=False)', 'console=False, icon="app_logo.ico", version="version_info.rc")')
 
-        # Build the datas list string 
-        datas_injection = "added_datas = [\n"
-        for src, dst in ANALYSIS_ADDITIONS["datas"]:
-            # PyInstaller spec files use Python tuples
-            datas_injection += f"    ('{src}', '{dst}'),\n"
-        datas_injection += "]\na.datas += added_datas"
+        new_content.append(line)
 
-        # Use simple string concatenation to bypass regex engine's escape sequence checking
-        replacement_template = r'\1' + '\n\n' + datas_injection
-        
-        # Find the PYZ line and inject our custom data *before* it gets processed
-        content = re.sub(pkg_pattern, replacement_template, content, 1, flags=re.DOTALL)
-
-
-    # --- 2. Modify the EXE block (for icon and version) ---
-    replace_str = r'\1, icon="app_logo.ico", version="version_info.rc"'
-
-    content = re.sub(exe_pattern, replace_str, content, 1, flags=re.DOTALL)
-
-
-    # --- 3. Write the updated content back ---
+    # 3. Write the modified content back
     with open(SPEC_FILE, 'w') as f:
-        f.write(content)
+        f.writelines(new_content)
 
-    print(f"Successfully modified {SPEC_FILE} for Windows resources.")
+    print(f"Successfully modified {SPEC_FILE} using stable Python string replacement.")
 
 if __name__ == "__main__":
-    modify_spec()
+    modify_spec_stable()
