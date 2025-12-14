@@ -25,11 +25,23 @@ jobs:
           pip install -r requirements.txt
           
       - name: Build Windows Executable
-        shell: cmd # Forces the use of Command Prompt shell for reliable execution
+        shell: bash # Use the powerful Bash shell for reliable multi-line commands
         run: |
-          # Define command on a single line for stability
-          COMMAND="python -m PyInstaller --onefile --windowed --name Bin2Book --icon app_logo.ico --version-file version_info.rc --collect-all pypdf --collect-all undetected_chromedriver --hidden-import selenium.webdriver.chrome.service --hidden-import reportlab.graphics.shapes --hidden-import reportlab.pdfbase.pdfmetrics --add-data C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab gui.py"
-          %COMMAND%
+          # Use single quotes for a multi-line string for PyInstaller command
+          COMMAND='
+          python -m PyInstaller --onefile --windowed --name "Bin2Book" \
+          --icon "app_logo.ico" \
+          --version-file "version_info.rc" \
+          --collect-all "pypdf" \
+          --collect-all "undetected_chromedriver" \
+          --hidden-import "selenium.webdriver.chrome.service" \
+          --hidden-import "reportlab.graphics.shapes" \
+          --hidden-import "reportlab.pdfbase.pdfmetrics" \
+          --add-data "C:\hostedtoolcache\windows\Python\3.10.11\x64\Lib\site-packages\reportlab;reportlab" \
+          "gui.py"
+          '
+          # Execute the command
+          eval $COMMAND
 
       - name: Archive and Upload Artifact
         uses: actions/upload-artifact@v4
